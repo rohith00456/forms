@@ -50,7 +50,7 @@
                     <div class="form-section border-top border-primary border-5">
                         <h4 class="mb-4 text-center">Contact Us</h4>
                         <div id="contactAlert" class="alert d-none" role="alert"></div>
-                        <form id="contactForm">
+                        <form id="contactForm" onsubmit="return submitContact(event)">
                             <div class="row g-3">
                                 <div class="col-md-6"><label class="form-label">Your Name</label><input type="text" class="form-control" id="contactName" required></div>
                                 <div class="col-md-6"><label class="form-label">Your Email</label><input type="email" class="form-control" id="contactEmail" required></div>
@@ -72,7 +72,7 @@
                     <div class="form-section border-top border-dark border-5">
                         <h4 class="mb-4 text-center">Request a Free Quote</h4>
                         <div id="quoteAlert" class="alert d-none" role="alert"></div>
-                        <form id="quoteForm">
+                        <form id="quoteForm" onsubmit="return submitQuote(event)">
                             <div class="row g-3">
                                 <div class="col-md-6"><label class="form-label">Name</label><input type="text" class="form-control" id="quoteName" required></div>
                                 <div class="col-md-6"><label class="form-label">Email</label><input type="email" class="form-control" id="quoteEmail" required></div>
@@ -105,7 +105,7 @@
                     <div class="form-section border-top border-success border-5">
                         <h4 class="mb-4 text-center">Internship Application</h4>
                         <div id="internAlert" class="alert d-none" role="alert"></div>
-                        <form id="internForm">
+                        <form id="internForm" onsubmit="return submitIntern(event)">
                             <h5 class="mb-3 text-success border-bottom pb-2">Personal Details</h5>
                             <div class="row g-3 mb-4">
                                 <div class="col-md-6"><label class="form-label">Full Name *</label><input type="text" class="form-control" id="internName" required></div>
@@ -183,7 +183,7 @@
                         
                         <div id="newsletterAlert" class="alert d-none" role="alert"></div>
                         
-                        <form id="newsletterForm">
+                        <form id="newsletterForm" onsubmit="return submitNewsletter(event)">
                             <div class="input-group mb-3">
                                 <input type="email" class="form-control form-control-lg" id="newsletterEmail" placeholder="Enter your email" required>
                                 <button class="btn btn-info text-white px-4" type="submit" id="newsletterBtn">Subscribe</button>
@@ -213,18 +213,23 @@
     const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
     // Helper function for form submission
-    async function handleFormSubmit(formId, btnId, alertId, tableName, getPayloadData, successMessage) {
-        document.getElementById(formId).addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById(btnId);
-            const alertBox = document.getElementById(alertId);
-            const originalBtnText = btn.innerHTML;
-            
-            btn.disabled = true;
-            btn.innerHTML = 'Submitting...';
-            alertBox.classList.add('d-none');
-            
-            const payload = getPayloadData();
+    async function executeSubmit(e, formId, btnId, alertId, tableName, payload, successMessage) {
+        e.preventDefault();
+        
+        if (!window.supabase) {
+            alert("Database connection not loaded! Please refresh.");
+            return false;
+        }
+
+        const btn = document.getElementById(btnId);
+        const alertBox = document.getElementById(alertId);
+        const originalBtnText = btn.innerHTML;
+        
+        btn.disabled = true;
+        btn.innerHTML = 'Submitting...';
+        alertBox.classList.add('d-none');
+        
+        try {
             const { error } = await supabase.from(tableName).insert([payload]);
 
             if (error) {
@@ -235,53 +240,69 @@
                 alertBox.className = 'alert alert-success mt-3';
                 alertBox.innerHTML = successMessage;
                 document.getElementById(formId).reset();
+                window.scrollTo({ top: alertBox.offsetTop - 100, behavior: 'smooth' });
             }
+        } catch (err) {
+            console.error('Crash:', err);
+            alertBox.className = 'alert alert-danger mt-3';
+            alertBox.innerHTML = 'A network error occurred.';
+        }
 
-            btn.disabled = false;
-            btn.innerHTML = originalBtnText;
-        });
+        btn.disabled = false;
+        btn.innerHTML = originalBtnText;
+        return false;
     }
 
     // 1. Contact Form
-    handleFormSubmit('contactForm', 'contactBtn', 'contactAlert', 'lead_captures', () => ({
-        name: document.getElementById('contactName').value,
-        email: document.getElementById('contactEmail').value,
-        phone: document.getElementById('contactPhone').value,
-        subject: document.getElementById('contactSubject').value,
-        message: document.getElementById('contactMessage').value,
-        source: 'website_contact'
-    }), 'Your message has been sent successfully. We will get back to you soon!');
+    window.submitContact = function(e) {
+        const payload = {
+            name: document.getElementById('contactName').value,
+            email: document.getElementById('contactEmail').value,
+            phone: document.getElementById('contactPhone').value,
+            subject: document.getElementById('contactSubject').value,
+            message: document.getElementById('contactMessage').value,
+            source: 'website_contact'
+        };
+        return executeSubmit(e, 'contactForm', 'contactBtn', 'contactAlert', 'lead_captures', payload, 'Your message has been sent successfully. We will get back to you soon!');
+    };
 
     // 2. Quote Form
-    handleFormSubmit('quoteForm', 'quoteBtn', 'quoteAlert', 'quote_requests', () => ({
-        name: document.getElementById('quoteName').value,
-        email: document.getElementById('quoteEmail').value,
-        phone: document.getElementById('quotePhone').value,
-        main_service: document.getElementById('quoteMainService').value,
-        detailed_service: document.getElementById('quoteDetailedService').value,
-        message: document.getElementById('quoteMessage').value,
-    }), 'Quote request received! We will contact you shortly.');
+    window.submitQuote = function(e) {
+        const payload = {
+            name: document.getElementById('quoteName').value,
+            email: document.getElementById('quoteEmail').value,
+            phone: document.getElementById('quotePhone').value,
+            main_service: document.getElementById('quoteMainService').value,
+            detailed_service: document.getElementById('quoteDetailedService').value,
+            message: document.getElementById('quoteMessage').value,
+        };
+        return executeSubmit(e, 'quoteForm', 'quoteBtn', 'quoteAlert', 'quote_requests', payload, 'Quote request received! We will contact you shortly.');
+    };
 
     // 3. Internship Form
-    handleFormSubmit('internForm', 'internBtn', 'internAlert', 'intern_applications', () => ({
-        name: document.getElementById('internName').value,
-        email: document.getElementById('internEmail').value,
-        contact: document.getElementById('internContact').value,
-        whatsapp: document.getElementById('internWhatsapp').value,
-        dob: document.getElementById('internDob').value || null,
-        gender: document.getElementById('internGender').value,
-        college: document.getElementById('internCollege').value,
-        degree: document.getElementById('internDegree').value,
-        department: document.getElementById('internDepartment').value,
-        year: document.getElementById('internYear').value,
-        domain: document.getElementById('internDomain').value,
-        duration: document.getElementById('internDuration').value
-    }), 'Application submitted successfully! We will review your profile.');
+    window.submitIntern = function(e) {
+        const payload = {
+            name: document.getElementById('internName').value,
+            email: document.getElementById('internEmail').value,
+            contact: document.getElementById('internContact').value,
+            whatsapp: document.getElementById('internWhatsapp').value,
+            dob: document.getElementById('internDob').value || null,
+            gender: document.getElementById('internGender').value,
+            college: document.getElementById('internCollege').value,
+            degree: document.getElementById('internDegree').value,
+            department: document.getElementById('internDepartment').value,
+            year: document.getElementById('internYear').value,
+            domain: document.getElementById('internDomain').value,
+            duration: document.getElementById('internDuration').value
+        };
+        return executeSubmit(e, 'internForm', 'internBtn', 'internAlert', 'intern_applications', payload, 'Application submitted successfully! We will review your profile.');
+    };
 
     // 4. Newsletter Form
-    handleFormSubmit('newsletterForm', 'newsletterBtn', 'newsletterAlert', 'newsletter_subscribers', () => ({
-        email: document.getElementById('newsletterEmail').value
-    }), 'Thank you for subscribing!');
+    window.submitNewsletter = function(e) {
+        const payload = { email: document.getElementById('newsletterEmail').value };
+        return executeSubmit(e, 'newsletterForm', 'newsletterBtn', 'newsletterAlert', 'newsletter_subscribers', payload, 'Thank you for subscribing!');
+    };
 
 </script>
 </body>
