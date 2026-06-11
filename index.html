@@ -217,7 +217,7 @@
     }
     const supabaseUrl = 'https://wctbdqunrifopbnjisxi.supabase.co';
     const supabaseKey = 'sb_publishable_q0VN3NfdSy8Gth-vH2eNeg_iUNNBX_x';
-    const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
+    const supabaseClient = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
     // Helper function for form submission
     async function executeSubmit(formId, btnId, alertId, tableName, payload, successMessage) {
@@ -235,7 +235,7 @@
         alertBox.classList.add('d-none');
         
         try {
-            const { error } = await supabase.from(tableName).insert([payload]);
+            const { error } = await supabaseClient.from(tableName).insert([payload]);
 
             if (error) {
                 console.error('Error:', error);
