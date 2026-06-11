@@ -204,9 +204,13 @@
 <!-- Supabase Integration Scripts -->
 <script>
     // Initialize Supabase
+    if (typeof window.supabase === 'undefined') {
+        alert("CRITICAL ERROR: The database script failed to load. Your browser or network might be blocking cdn.jsdelivr.net. Forms will not work until this is fixed.");
+        console.error("Supabase script failed to load!");
+    }
     const supabaseUrl = 'https://wctbdqunrifopbnjisxi.supabase.co';
     const supabaseKey = 'sb_publishable_q0VN3NfdSy8Gth-vH2eNeg_iUNNBX_x';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    const supabase = window.supabase ? window.supabase.createClient(supabaseUrl, supabaseKey) : null;
 
     // Helper function for form submission
     async function handleFormSubmit(formId, btnId, alertId, tableName, getPayloadData, successMessage) {
